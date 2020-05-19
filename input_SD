@@ -1,0 +1,93 @@
+//向外部存储写入个TXT文档，读取外部存储中的文档
+
+import androidx.appcompat.app.AppCompatActivity;
+
+import android.content.Context;
+import android.os.Bundle;
+import android.os.Environment;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.TextView;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+
+public class MainActivity extends AppCompatActivity {
+   Button btn外部存储,btn外部读取;
+   EditText ed文件名,ed文件内容;
+   TextView txt存储路径;
+
+
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        btn外部读取=findViewById(R.id.btn_外部读取);
+        btn外部存储=findViewById(R.id.btn_外部保存);
+        ed文件名=findViewById(R.id.ed_保存文件名);
+        ed文件内容=findViewById(R.id.ed_保存文件内容);
+        txt存储路径=findViewById(R.id.txt_存储路径);
+
+        btn外部存储.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String 保存文件名=ed文件名.getText().toString();
+                String 保存内容=ed文件内容.getText().toString();
+
+                File file=new File(Environment.getExternalStorageDirectory(),保存文件名+".txt");
+                txt存储路径.setText(Environment.getExternalStorageDirectory().toString());
+                FileOutputStream 文件输出流2外部存储=null;
+                try{
+                    文件输出流2外部存储=new FileOutputStream(file);
+                    文件输出流2外部存储.write(保存内容.getBytes("UTF-8"));
+                }catch (Exception e){
+                    e.printStackTrace();
+                }finally {
+                    if(文件输出流2外部存储!=null){
+                        try{
+                            文件输出流2外部存储.close();
+                        }catch (IOException e){
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
+        });
+        btn外部读取.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String 读取文件名=ed文件名.getText().toString();
+                //String 保存内容=ed文件内容.getText().toString();
+
+                File file=new File(Environment.getExternalStorageDirectory(),读取文件名);
+                txt存储路径.setText(Environment.getExternalStorageDirectory().toString());
+                FileInputStream 文件输入流from外部存储=null;
+                try{
+                    文件输入流from外部存储=new FileInputStream(file);
+                    byte[] 输入数据字节数组=new byte[文件输入流from外部存储.available()];
+                    文件输入流from外部存储.read(输入数据字节数组);
+                    ed文件内容.setText(new String(输入数据字节数组));
+
+                }catch (FileNotFoundException e){
+                    e.printStackTrace();
+                }catch (IOException e){
+                    e.printStackTrace();
+                } finally {
+                    if(文件输入流from外部存储!=null){
+                        try{
+                            文件输入流from外部存储.close();
+                        }catch (IOException e){
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
+        });
+
+    }
+}
