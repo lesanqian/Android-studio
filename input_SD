@@ -1,4 +1,5 @@
 //向外部存储写入个TXT文档，读取外部存储中的文档
+//注意在AndroidMainfest.xml文件中添加权限
 
 import androidx.appcompat.app.AppCompatActivity;
 
