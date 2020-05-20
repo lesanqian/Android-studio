@@ -1,0 +1,256 @@
+package sau.zhaole.myapplication;
+
+import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.Dialog;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.net.Uri;
+import android.os.Bundle;
+import android.os.Environment;
+import android.view.ContextMenu;
+import android.view.Display;
+import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
+import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
+import android.widget.AdapterView;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ListView;
+import android.widget.PopupMenu;
+import android.widget.SimpleAdapter;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+public class MainActivity extends Activity {
+    ListView listView;
+    TextView textView;
+    File currentParent;
+    File[] currentFiles;
+    Button btn返回,btn新建;
+    EditText editText;
+    View view;
+    
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        listView = findViewById(R.id.list);
+        textView = findViewById(R.id.path);
+        btn返回 = findViewById(R.id.parent);
+        registerForContextMenu(listView);
+        btn新建=findViewById(R.id.btn_新建);
+        boolean sdCardExist = Environment.getExternalStorageState().equals(android.os.Environment.MEDIA_MOUNTED);   //判断sd卡是否存在
+        final File sd_care;
+        sd_care = Environment.getExternalStorageDirectory();
+        if (sdCardExist) {
+            currentParent = sd_care;
+            currentFiles = currentParent.listFiles();
+            //使用当前目录下的全部文件，文件夹来填充listView
+            inflateListView(currentFiles);
+        }
+        //单击item的事件响应
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+
+            @Override
+            public void onItemClick(AdapterView<?> but返回, View view, int position,
+                                    long id) {
+                // TODO Auto-generated method stub
+                //如果用户单击了文件，直接返回，不做任何处理
+                if (currentFiles[position].isFile())
+                    return;
+                //获取用户点击的文件夹下的所有文件
+                File[] tmp = currentFiles[position].listFiles();
+                if (tmp == null || tmp.length == 0) {
+                    Toast.makeText(MainActivity.this, "当前路径不可访问或该路径下没有文件", Toast.LENGTH_SHORT).show();
+                } else {
+                    //获取用户单击的列表项对应的文件夹，设为当前父文件夹
+                    currentParent = currentFiles[position];
+                    //保存当前父文件夹下的全部文件和文件夹
+                    currentFiles = tmp;
+                    //再次更新listView
+                    inflateListView(currentFiles);
+                }
+            }
+        });
+
+//       // 长按item的事件响应
+        listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> parent, View view, final int position, long id) {
+                fileHandle(currentFiles[position]);
+                File file_n=currentFiles[position].getParentFile();
+                inflateListView(file_n.listFiles());
+                return false;
+            }
+        });
+        btn新建.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                File file_2 = new File(currentParent.getAbsolutePath(), "新建文件夹");
+                //先创建文件夹
+                file_2.mkdir();
+                Toast.makeText(MainActivity.this, "创建成功了", Toast.LENGTH_SHORT).show();
+                inflateListView(currentParent.listFiles());
+            }
+        });
+        //回到上一级目录的按钮
+        btn返回.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // TODO Auto-generated method stub
+                try {
+                    if (!currentParent.getCanonicalPath().equals("/mnt/sdcard")) {
+                        //获取上一级目录
+                        currentParent = currentParent.getParentFile();
+                        //列出当前目录下所有文件
+                        currentFiles = currentParent.listFiles();
+                        //再次更新ListView
+                        inflateListView(currentFiles);
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+    }
+    
+    //填充listView
+    private void inflateListView(File[] files) {
+        List<Map<String, Object>> list = new ArrayList<Map<String, Object>>();
+
+        int i = 0;
+        for (i = 0; i < files.length; i++) {
+            Map<String, Object> map = new HashMap<String, Object>();
+            // 如果当前File是文件夹，使用folder图标、否则是file图标
+            if (files[i].isDirectory()) {
+                map.put("icon", R.drawable.folder);
+            } else {
+                map.put("icon", R.drawable.file);
+            }
+            map.put("fileName", files[i].getName());
+            list.add(map);
+        }
+        //创建一个simpleadaptor, 使用ID为R.id.icon的组将来显示icon对应的值
+        SimpleAdapter simpleAdapter = new SimpleAdapter(this, list, R.layout.line, new String[]{"icon", "fileName"}, new int[]{R.id.icon, R.id.file_name});
+        //为listView设置Adapter
+        listView.setAdapter(simpleAdapter);
+        try {
+            textView.setText("当前路径为: " + currentParent.getCanonicalPath());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void fileHandle(final File file) {
+        DialogInterface.OnClickListener listener = new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                         // 打开文件
+                        if(which==0)  {
+                             LayoutInflater factory = LayoutInflater.from(MainActivity.this);
+                             view = factory.inflate(R.layout.dialog, null);
+                               editText = (EditText) view.findViewById(R.id.editText);
+                             editText.setText(file.getName());
+                             DialogInterface.OnClickListener listener2 = new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            String modifyName = editText.getText().toString();
+                            final String fpath = file.getParentFile().getPath();
+                            final File newFile = new File(fpath + "/" + modifyName);
+                            if (newFile.exists()) {
+                                if (!modifyName.equals(file.getName())) {
+                                    new AlertDialog.Builder(MainActivity.this)
+                                            .setTitle("注意!")
+                                            .setMessage("文件名已存在，是否覆盖？")
+                                            .setPositiveButton("确定", new DialogInterface.OnClickListener() {
+                                                        @Override
+                                                        public void onClick(DialogInterface dialog, int
+                                                                which) {
+                                                            if (file.renameTo(newFile)){
+                                                                displayToast("重命名成功！");
+                                                            } else{
+                                                                displayToast("重命名失败！");
+                                                            }
+                                                        }
+                                                    }).setNegativeButton("取消", new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialog, int
+                                                which) { }}).show();
+                                }
+                                //inflateListView(file.listFiles());
+                            } else {
+                                                if (file.renameTo(newFile)){
+                                                   displayToast("重命名成功！");
+                                                }
+                                                else{
+                                                   displayToast("重命名失败！");
+                                                }
+                            }
+                        }
+                    };
+            AlertDialog renameDialog = new AlertDialog.Builder(MainActivity.this).create();
+            renameDialog.setView(view);
+            renameDialog.setButton("确定", listener2);
+            renameDialog.setButton2("取消", new DialogInterface.OnClickListener() {
+                @Override
+                        public void onClick(DialogInterface dialog, int
+                                which) {
+                            // TODO Auto-generated method stub
+                        }
+                    });
+            renameDialog.show();
+        }
+         //删除文件
+        else {
+            new AlertDialog.Builder(MainActivity.this)
+                    .setTitle("注意!")
+                    .setMessage("确定要删除此文件吗？")
+                    .setPositiveButton("确定", new
+                            DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int
+                                        which) {
+                                    if (file.delete()) {
+                                          displayToast("删除成功！");
+                                    } else {
+                                         displayToast("删除失败！");
+                                    }
+                                }
+
+                            }).setNegativeButton("取消", new
+                    DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int
+                                which) { }
+                    }).show();
+        }
+    }
+};
+        //选择文件时，弹出增删该操作选项对话框
+        String[] menu = {"重命名","删除文件"};
+        new AlertDialog.Builder(MainActivity.this)
+                .setTitle("请选择要进行的操作!")
+                .setItems(menu, listener)
+                .setPositiveButton("取消", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void  onClick(DialogInterface dialog, int
+                            which) { }
+                }).show();
+        //inflateListView(file.listFiles());
+    }
+    private void  displayToast(String message){
+        Toast.makeText(MainActivity.this, message, Toast.LENGTH_SHORT).show();
+    }
+}
