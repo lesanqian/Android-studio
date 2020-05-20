@@ -1,0 +1,33 @@
+ @Override
+    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
+        super.onCreateContextMenu(menu, v, menuInfo);
+        getMenuInflater().inflate(R.menu.menu, menu);/*第一个参数是指将哪个菜单资源文件创建出来,第二个改菜单赋予哪个菜单对象、*/
+    }
+
+    //为菜单项添加响应
+    @Override
+    public boolean onContextItemSelected(MenuItem item) {
+        //通过item.getItemId()对不同选项进行不同的处理
+        switch (item.getItemId()) {
+            case R.id.menu1:
+                Toast.makeText(MainActivity.this, "You clicked add_item", Toast.LENGTH_SHORT).show();
+                break;
+            case R.id.menu2:
+                File file_1 = new File(currentParent.getAbsolutePath());
+                file_1.delete();
+                inflateListView(currentParent.listFiles());
+                Toast.makeText(MainActivity.this, "You clicked remove_item", Toast.LENGTH_SHORT).show();
+                break;
+            case R.id.menu3:
+                File file_2 = new File(currentParent.getAbsolutePath(), "新建文件夹");
+                //先创建文件夹
+                file_2.mkdir();
+                Toast.makeText(MainActivity.this, "创建成功了", Toast.LENGTH_SHORT).show();
+                inflateListView(currentParent.listFiles());
+                break;
+            default:
+                break;
+        }
+        return true;
+    }
+    
